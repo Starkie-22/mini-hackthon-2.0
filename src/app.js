@@ -89,7 +89,6 @@ function fetchQuestions(category) {
     categoryTitle.textContent = `Category: ${categoryText}`;
     document.querySelector(".game").classList.remove("hidden");
     showQuestion();
-    console.log(questions);
   });
 }
 
