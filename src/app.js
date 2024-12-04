@@ -17,6 +17,8 @@ let player2Score = 0;
 let questions = [];
 let currentQuestionIndex = 0;
 let currentPlayer = 1;
+let playedCategories = [];
+let currentCategory = "";
 
 startButton.addEventListener("click", () => {
   player1Name = player1Input.value.trim();
@@ -48,14 +50,18 @@ function displayCategories(categories) {
   categoryContainer.innerHTML = "";
   document.querySelector(".category-selection").classList.remove("hidden");
 
-  const categoryList = Object.keys(categories);
-  categoryList.forEach((category) => {
+  const remainingCategories = Object.keys(categories).filter(
+    (category) => !playedCategories.includes(category)
+  );
+
+  remainingCategories.forEach((category) => {
     const categoryButton = document.createElement("button");
     categoryButton.textContent = category;
     categoryButton.classList.add("category-button");
     categoryContainer.appendChild(categoryButton);
     categoryButton.addEventListener("click", () => {
       const categoryValue = categories[category][0];
+      currentCategory = category;
       fetchQuestions(categoryValue);
     });
   });
@@ -64,10 +70,10 @@ function displayCategories(categories) {
   randomButton.textContent = "Random";
   randomButton.classList.add("category-button");
   randomButton.addEventListener("click", () => {
-    const randomIndex = [Math.floor(Math.random() * categoryList.length)];
-    const randomKey = categoryList[randomIndex];
+    const randomIndex = Math.floor(Math.random() * remainingCategories.length);
+    const randomKey = remainingCategories[randomIndex];
     const randomCategory = categories[randomKey][0];
-
+    currentCategory = randomKey;
     fetchQuestions(randomCategory);
   });
   categoryContainer.appendChild(randomButton);
@@ -75,6 +81,7 @@ function displayCategories(categories) {
 
 function fetchQuestions(category) {
   document.querySelector(".category-selection").classList.add("hidden");
+
   const easyQuestionUrl = `https://the-trivia-api.com/api/questions?categories=${category}&difficulty=easy&limit=2`;
   const mediumQuestionUrl = `https://the-trivia-api.com/api/questions?categories=${category}&difficulty=medium&limit=2`;
   const hardQuestionUrl = `https://the-trivia-api.com/api/questions?categories=${category}&difficulty=hard&limit=2`;
@@ -85,8 +92,7 @@ function fetchQuestions(category) {
     fetch(hardQuestionUrl).then((response) => response.json()),
   ]).then(([easyQuestions, mediumQuestions, hardQuestions]) => {
     questions = [...easyQuestions, ...mediumQuestions, ...hardQuestions];
-    const categoryText = document.querySelector(".category-button").textContent;
-    categoryTitle.textContent = `Category: ${categoryText}`;
+    playedCategories.push(currentCategory);
     document.querySelector(".game").classList.remove("hidden");
     showQuestion();
   });
@@ -151,18 +157,43 @@ nextButton.addEventListener("click", () => {
   showQuestion();
 });
 
+document.querySelector("#continue").addEventListener("click", () => {
+  if (playedCategories.length < Object.keys(categories).length) {
+    document.querySelector(".result").classList.add("hidden");
+    displayCategories(categories);
+  } else {
+    alert("All categories have been played!");
+  }
+});
+
 function endGame() {
   document.querySelector(".game").classList.add("hidden");
   document.querySelector(".result").classList.remove("hidden");
-  if (player1Score > player2Score) {
-    finalResult.textContent = `${player1Name} wins with ${player1Score} points!`;
-  } else if (player2Score > player1Score) {
-    finalResult.textContent = `${player2Name} wins with ${player2Score} points!`;
-  } else {
-    finalResult.textContent = `It's a tie! Both scored ${player1Score} points.`;
-  }
+
+  finalResult.textContent = `${player1Name}: ${player1Score} points, ${player2Name}: ${player2Score} points.`;
+
+  document.querySelector("#continue").classList.remove("hidden");
+  document.querySelector("#end-game").classList.remove("hidden");
 }
 
-restartButton.addEventListener("click", () => {
-  window.location.reload();
+document.querySelector("#end-game").addEventListener("click", () => {
+  document.querySelector("#continue").classList.add("hidden");
+  document.querySelector("#end-game").classList.add("hidden");
+  finalResult.classList.add("hidden");
+  document.querySelector("#restart").classList.remove("hidden");
+
+  const finalMessage =
+    player1Score > player2Score
+      ? `${player1Name} wins with ${player1Score} points!`
+      : player2Score > player1Score
+      ? `${player2Name} wins with ${player2Score} points!`
+      : `It's a tie! Both scored ${player1Score} points.`;
+
+  document.querySelector(".result").innerHTML = `
+    <h2>${finalMessage}</h2>
+    <button id="restart">Restart Game</button>
+  `;
+  document.querySelector("#restart").addEventListener("click", () => {
+    window.location.reload();
+  });
 });
